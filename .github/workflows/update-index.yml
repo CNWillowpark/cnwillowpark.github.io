@@ -1,19 +1,4 @@
-name: Update Index Page
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  update-index:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Generate folder-based file list
+- name: Generate folder-based file list
         run: |
           python3 - <<'EOF'
           import os, re
@@ -21,6 +6,12 @@ jobs:
 
           folders = defaultdict(list)
 
+          # First, register all non-hidden subdirectories (even empty ones)
+          for entry in os.scandir('.'):
+              if entry.is_dir() and not entry.name.startswith('.'):
+                  folders[entry.name]  # just ensure the key exists
+
+          # Then populate with html files
           for root, dirs, filenames in os.walk('.'):
               dirs[:] = [d for d in dirs if not d.startswith('.')]
               for f in filenames:
@@ -28,20 +19,22 @@ jobs:
                       path = os.path.join(root, f).lstrip('./')
                       parts = path.split('/')
                       if len(parts) == 1:
-                          # Root-level html files
                           folders['__root__'].append(path)
                       else:
-                          folder = parts[0]
-                          folders[folder].append(path)
+                          folders[parts[0]].append(path)
 
           html_parts = []
+
+          # Root-level files first
+          if '__root__' in folders:
+              for f in sorted(folders.pop('__root__')):
+                  name = f.replace('.html', '').replace('-', ' ').replace('_', ' ').title()
+                  html_parts.append(f'      <li><a href="{f}">{name}</a></li>')
+
+          # Then folders
           for folder, files in sorted(folders.items()):
-              if folder == '__root__':
-                  for f in sorted(files):
-                      name = f.replace('.html', '').replace('-', ' ').replace('_', ' ').title()
-                      html_parts.append(f'      <li><a href="{f}">{name}</a></li>')
-              else:
-                  folder_label = folder.replace('-', ' ').replace('_', ' ').title()
+              folder_label = folder.replace('-', ' ').replace('_', ' ').title()
+              if files:
                   inner = '\n'.join(
                       f'          <li><a href="{f}">{f.split("/")[-1].replace(".html","").replace("-"," ").replace("_"," ").title()}</a></li>'
                       for f in sorted(files)
@@ -51,6 +44,15 @@ jobs:
                       f'        <details>\n'
                       f'          <summary>📁 {folder_label}</summary>\n'
                       f'          <ul>\n{inner}\n          </ul>\n'
+                      f'        </details>\n'
+                      f'      </li>'
+                  )
+              else:
+                  # Empty folder — show it but greyed out
+                  html_parts.append(
+                      f'      <li>\n'
+                      f'        <details disabled>\n'
+                      f'          <summary style="color: grey;">📁 {folder_label} <em>(coming soon)</em></summary>\n'
                       f'        </details>\n'
                       f'      </li>'
                   )
@@ -70,10 +72,3 @@ jobs:
           with open('index.html', 'w') as fh:
               fh.write(new_content)
           EOF
-
-      - name: Commit updated index.html
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git diff --quiet || git commit -am "chore: update page list in index.html"
-          git push
