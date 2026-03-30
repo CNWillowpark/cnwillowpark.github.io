@@ -4,6 +4,7 @@
 
 
 To upload to the website you must first build the game for WebGL. The ninjas’ laptops most likely will not have this feature added. **To add it, open Unity Hub -> Installs -> Gear icon on the version installed -> WebGL.**
+
 **Build the game by opening it, File -> Build Settings -> Switch Platform -> Build.**
 
 **Create a new folder to put the build files in**
