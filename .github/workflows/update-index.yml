@@ -1,0 +1,54 @@
+name: Update Index Page
+
+on:
+  push:
+    branches: [main]  # or 'master' if that's your default branch
+
+jobs:
+  update-index:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate HTML file list
+        run: |
+          python3 - <<'EOF'
+          import os
+
+          files = []
+          for root, dirs, filenames in os.walk('.'):
+              # Skip hidden folders like .git, .github
+              dirs[:] = [d for d in dirs if not d.startswith('.')]
+              for f in filenames:
+                  if f.endswith('.html') and f != 'index.html':
+                      path = os.path.join(root, f).lstrip('./')
+                      files.append(path)
+
+          files.sort()
+          items = '\n'.join(f'      <li><a href="{f}">{f}</a></li>' for f in files)
+
+          with open('index.html', 'r') as fh:
+              content = fh.read()
+
+          # Replaces everything between these two comments in your index.html
+          import re
+          new_content = re.sub(
+              r'<!-- PAGE-LIST-START -->.*?<!-- PAGE-LIST-END -->',
+              f'<!-- PAGE-LIST-START -->\n    <ul>\n{items}\n    </ul>\n    <!-- PAGE-LIST-END -->',
+              content,
+              flags=re.DOTALL
+          )
+
+          with open('index.html', 'w') as fh:
+              fh.write(new_content)
+          EOF
+
+      - name: Commit updated index.html
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet || git commit -am "chore: update page list in index.html"
+          git push
