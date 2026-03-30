@@ -13,4 +13,4 @@ To upload to the website you must first build the game for WebGL. The ninjas’ 
 
 **Create a new folder to put the build files in**
 
-The build will give you several files in a folder. **Rename the .html file to the ninjas name and the game title (e.g. ninja-dropping-bombs). This is very important as things will break if this stays as index.html** Upload this to the cnwillowpark@gmail.com github page.
+The build will give you several files in a folder. **Rename the .html file to the ninjas name and the game title (e.g. ninja-lastname-dropping-bombs.html). This is very important as things will break if this stays as index.html** Upload this to the cnwillowpark@gmail.com github page.
