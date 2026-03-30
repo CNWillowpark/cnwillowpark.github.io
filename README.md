@@ -7,9 +7,9 @@ To upload to the website you must first build the game for WebGL. The ninjas’ 
 
 **Build the game by opening it, File -> Build Settings -> Switch Platform**
 
-# **Important before you build!**
+## **Important before you build!**
 
-## **Go to Edit -> Project Settings -> Player -> Publishing Settings -> Change compression format to disabled**
+### **Go to Edit -> Project Settings -> Player -> Publishing Settings -> Change compression format to disabled**
 
 **Create a new folder to put the build files in**
 
