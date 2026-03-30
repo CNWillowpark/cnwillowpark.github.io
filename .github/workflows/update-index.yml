@@ -2,7 +2,7 @@ name: Update Index Page
 
 on:
   push:
-    branches: [main]  # or 'master' if that's your default branch
+    branches: [main]
 
 jobs:
   update-index:
@@ -13,28 +13,53 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate HTML file list
+      - name: Generate folder-based file list
         run: |
           python3 - <<'EOF'
-          import os
+          import os, re
+          from collections import defaultdict
 
-          files = []
+          folders = defaultdict(list)
+
           for root, dirs, filenames in os.walk('.'):
-              # Skip hidden folders like .git, .github
               dirs[:] = [d for d in dirs if not d.startswith('.')]
               for f in filenames:
                   if f.endswith('.html') and f != 'index.html':
                       path = os.path.join(root, f).lstrip('./')
-                      files.append(path)
+                      parts = path.split('/')
+                      if len(parts) == 1:
+                          # Root-level html files
+                          folders['__root__'].append(path)
+                      else:
+                          folder = parts[0]
+                          folders[folder].append(path)
 
-          files.sort()
-          items = '\n'.join(f'      <li><a href="{f}">{f}</a></li>' for f in files)
+          html_parts = []
+          for folder, files in sorted(folders.items()):
+              if folder == '__root__':
+                  for f in sorted(files):
+                      name = f.replace('.html', '').replace('-', ' ').replace('_', ' ').title()
+                      html_parts.append(f'      <li><a href="{f}">{name}</a></li>')
+              else:
+                  folder_label = folder.replace('-', ' ').replace('_', ' ').title()
+                  inner = '\n'.join(
+                      f'          <li><a href="{f}">{f.split("/")[-1].replace(".html","").replace("-"," ").replace("_"," ").title()}</a></li>'
+                      for f in sorted(files)
+                  )
+                  html_parts.append(
+                      f'      <li>\n'
+                      f'        <details>\n'
+                      f'          <summary>📁 {folder_label}</summary>\n'
+                      f'          <ul>\n{inner}\n          </ul>\n'
+                      f'        </details>\n'
+                      f'      </li>'
+                  )
+
+          items = '\n'.join(html_parts)
 
           with open('index.html', 'r') as fh:
               content = fh.read()
 
-          # Replaces everything between these two comments in your index.html
-          import re
           new_content = re.sub(
               r'<!-- PAGE-LIST-START -->.*?<!-- PAGE-LIST-END -->',
               f'<!-- PAGE-LIST-START -->\n    <ul>\n{items}\n    </ul>\n    <!-- PAGE-LIST-END -->',
