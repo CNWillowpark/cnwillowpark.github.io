@@ -42,7 +42,7 @@
                   html_parts.append(
                       f'      <li>\n'
                       f'        <details>\n'
-                      f'          <summary>📁 {folder_label}</summary>\n'
+                      f'          <summary>{folder_label}</summary>\n'
                       f'          <ul>\n{inner}\n          </ul>\n'
                       f'        </details>\n'
                       f'      </li>'
@@ -52,7 +52,7 @@
                   html_parts.append(
                       f'      <li>\n'
                       f'        <details disabled>\n'
-                      f'          <summary style="color: grey;">📁 {folder_label} <em>(coming soon)</em></summary>\n'
+                      f'          <summary style="color: grey;">{folder_label} <em>(coming soon)</em></summary>\n'
                       f'        </details>\n'
                       f'      </li>'
                   )
