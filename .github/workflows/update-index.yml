@@ -1,26 +1,25 @@
 name: Update Index Page
-
 on:
   push:
     branches: [main]
-
 jobs:
   update-index:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Generate folder-based file list
         run: |
           python3 - <<'EOF'
           import os, re
           from collections import defaultdict
 
-          folders = defaultdict(list)
+          def format_label(s):
+              s = s.replace('-', ' ').replace('_', ' ')
+              return s[0].upper() + s[1:] if s else s
 
+          folders = defaultdict(list)
           for root, dirs, filenames in os.walk('.'):
               dirs[:] = [d for d in dirs if not d.startswith('.')]
               for f in filenames:
@@ -28,22 +27,20 @@ jobs:
                       path = os.path.join(root, f).lstrip('./')
                       parts = path.split('/')
                       if len(parts) == 1:
-                          # Root-level html files
                           folders['__root__'].append(path)
                       else:
                           folder = parts[0]
                           folders[folder].append(path)
-
           html_parts = []
           for folder, files in sorted(folders.items()):
               if folder == '__root__':
                   for f in sorted(files):
-                      name = f.replace('.html', '').replace('-', ' ').replace('_', ' ').title()
+                      name = format_label(f.replace('.html', ''))
                       html_parts.append(f'      <li><a href="{f}">{name}</a></li>')
               else:
-                  folder_label = folder.replace('-', ' ').replace('_', ' ').title()
+                  folder_label = format_label(folder)
                   inner = '\n'.join(
-                      f'          <li><a href="{f}">{f.split("/")[-1].replace(".html","").replace("-"," ").replace("_"," ").title()}</a></li>'
+                      f'          <li><a href="{f}">{format_label(f.split("/")[-1].replace(".html",""))}</a></li>'
                       for f in sorted(files)
                   )
                   html_parts.append(
@@ -54,23 +51,18 @@ jobs:
                       f'        </details>\n'
                       f'      </li>'
                   )
-
           items = '\n'.join(html_parts)
-
           with open('index.html', 'r') as fh:
               content = fh.read()
-
           new_content = re.sub(
               r'<!-- PAGE-LIST-START -->.*?<!-- PAGE-LIST-END -->',
               f'<!-- PAGE-LIST-START -->\n    <ul>\n{items}\n    </ul>\n    <!-- PAGE-LIST-END -->',
               content,
               flags=re.DOTALL
           )
-
           with open('index.html', 'w') as fh:
               fh.write(new_content)
           EOF
-
       - name: Commit updated index.html
         run: |
           git config user.name "github-actions[bot]"
